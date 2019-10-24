@@ -8,6 +8,9 @@ import System.Random
 -- keys represented as lists of absolute pitches
 type Key = [AbsPitch]
 
+-- can add more interesting keys using absolute pitches in [0,11] 
+-- this uses lowest octave for genKeyNotes modulo
+-- e.g. cmaj is C,D,E,F,G,A,B in octave -1
 cmaj = [0,2,4,5,7,9,11]
 
 gmaj = [0,2,4,6,7,9,11]
@@ -27,7 +30,7 @@ cfmaj = [1,3,4,6,8,10,11]
 cphryg = [0,1,4,5,6,8,11]
 
 keylist = [cmaj,gmaj,dmaj,amaj,emaj,bmaj,fsmaj,
-           fmaj,bfmaj,efmaj,afmaj,dfmaj,cfmaj] 
+           fmaj,bfmaj,efmaj,afmaj,dfmaj,cfmaj,cphryg] 
 
 -- possible bass instruments
 getBass :: Int -> InstrumentName
@@ -55,11 +58,14 @@ getTreble 7 = Xylophone
 getTreble 8 = DistortionGuitar
 getTreble 9 = Percussion
 
+-- generate a list of absolute pitches across all octaves from key
 genKeyNotes :: Key -> [AbsPitch]
 genKeyNotes l = 
     map (\n -> (n::AbsPitch)) (filter (\n -> (n `mod` 12) `elem` l) [0..127])
  
--- returns the key that best matches a list of absolute pitches using two accumulators   
+-- returns the first key with most matches to a user input list of absolute pitches  
+--     acckey preserves the best matching key so far
+--     accint preserves the highest number of matches in acckey  
 findBestKey :: [AbsPitch] -> [Key] -> Key -> Int -> Key
 findBestKey [] _ _ _= cmaj
 findBestKey _ [] acckey accint = acckey
@@ -69,9 +75,11 @@ findBestKey l (k:ks) acckey accint =
         else findBestKey l ks acckey accint
     where matches = keyMatchesHelper l k
 
+-- foldr to calculate number  of matches between list of absolute pitches and a given key
 keyMatchesHelper :: [AbsPitch] -> Key -> Int
 keyMatchesHelper l k = foldr (\x -> if (isinkey x k) then (+1) else (+0)) 0 l        
 
+-- IO number generation test
 main :: IO ()
 main = do
     -- num :: Float
@@ -80,6 +88,10 @@ main = do
     print num
     print (num * 2)
 
+-- threads current key into 3 separate generators to return larger composition  
+--      treble1 is a melodic line at half the speed it was generated
+--      treble2 is a melodic line at twice the speed it was generated
+--      bassroot is a line of root notes for chords to be built from by transposing    
 genMusic :: Key -> IO (Music AbsPitch)
 genMusic k = do
         treble1 <- playTreble k
@@ -93,6 +105,9 @@ genMusic k = do
         let music = trebleslow :=: treblefast :=: bass
         return music
 
+-- initializes new generator and generates a Music type containing
+--      a random line of treble-constrained quarter notes filtered by key 
+--      a random instrument modifying the whole tree     
 playTreble :: Key -> IO (Music AbsPitch)
 playTreble k = do
         g0 <- newStdGen
@@ -102,6 +117,9 @@ playTreble k = do
         let m = instrument (getTreble inst) (line $ map (\n -> (note qn n)) keyednums) 
         return m
 
+-- initializes new generator and generates a Music type containing
+--      a random line of bass-constrained half notes filtered by key 
+--      a random instrument modifying the whole tree 
 playBass :: Key -> IO (Music AbsPitch)    
 playBass k = do
         g0 <- newStdGen
@@ -111,10 +129,12 @@ playBass k = do
         let m = instrument (getBass inst) (line $ map (\n -> (note hn n)) nums2)
         return m    
 
+-- return whether absolute pitch x is in key k          
 isinkey :: AbsPitch -> Key -> Bool        
 isinkey x k
     | x `elem` (genKeyNotes k) = True
     | otherwise = False
+
 {-    
 showmod :: AbsPitch -> IO ()        
 showmod x = print (mod x 12)

@@ -27,6 +27,7 @@ shutdown = retro (tempo 1.3 (shutdownMelody :=: shutdownChords))
 -- list of possible "yes" answers
 affirmlist = ["y","yes","ye","oui","yea","yup","yee"]
 
+-- IO for user startup and shutdown
 start :: IO()
 start = 
     do
@@ -51,7 +52,8 @@ start =
                     else do
                         putStrLn "Okay bye :("
                         play shutdown
-                
+
+-- IO to call generation and subsequent saving or further generation from a given key                        
 callGen :: Key -> IO ()
 callGen k = do
     song <- genMusic k
@@ -76,7 +78,8 @@ callGen k = do
                     callGen k
                 else do
                     putStrLn "Generation is over!"
-                    
+
+-- IO to allow saving and naming a given musical composition                     
 writeToFile :: Music AbsPitch -> IO ()
 writeToFile s = do
     putStrLn "Give your file a name:"
@@ -84,17 +87,24 @@ writeToFile s = do
     writeMidi (name ++ ".midi") s
     putStrLn "File is saved in the same directory as this Haskell code."
 
-melodyInit :: IO ((Music AbsPitch), Key) 
+-- IO sending off first note and threaded list of pitches to be built in melodyBuilder
+-- returns completed melody and threaded list of pitches
+--      used so that IO for first note entry has different behaviour than melodyBuilder     
+melodyInit :: IO ((Music AbsPitch), [AbsPitch]) 
 melodyInit = 
     do
-        putStrLn "What sorts of notes would you like to hear? (see legend in this directory for key mappings)"
+        putStrLn "What is the first note you would like to hear? (see legend in this directory for key mappings)"
         p <- pitchReader
+        -- converts to absolute pitch for list used in key determination
         let abs = absPitch p
         let n = note qn abs        
         play n
         melodyBuilder (n,(abs:[]))
-            
-melodyBuilder :: ((Music AbsPitch), Key) -> IO ((Music AbsPitch), Key)   
+
+-- IO taking first note and threaded list of pitches, recursing until user is done
+-- returns completed melody and threaded list of pitches
+--      used so that IO for subsequent note entry has different behaviour than melodyInit        
+melodyBuilder :: ((Music AbsPitch), [AbsPitch]) -> IO ((Music AbsPitch), [AbsPitch])   
 melodyBuilder (m, k) = 
     do 
         putStrLn "Would you like to enter more notes? y/n"
@@ -103,6 +113,7 @@ melodyBuilder (m, k) =
             then do
                 putStrLn "Enter your next note. (see legend in this directory for key mappings)"
                 p <- pitchReader
+                -- converts to absolute pitch for list used in key determination
                 let abs = absPitch p
                 let n = note qn abs                
                 let newmusic = m :+: n
@@ -111,7 +122,7 @@ melodyBuilder (m, k) =
                 melodyBuilder (newmusic, (abs:k)) 
             else return (m, k)           
 
--- reads first char of user entry until it returns a music primitive              
+-- reads first char of user entry until it returns a music primitive (not absolute pitch)             
 pitchReader :: IO (Pitch)
 pitchReader = 
     do
