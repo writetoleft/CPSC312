@@ -9,7 +9,7 @@ You will need to install the following packages:
 -- Euterpea
 
 
-Cabal users can usually get by with the following in their console: 
+Cabal users can typically get this done problem-free by entering the following in their console: 
 
 -- cabal update
 
