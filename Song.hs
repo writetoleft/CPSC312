@@ -1,4 +1,5 @@
 {- Sessival (feat. Haskell) - Algorithma -}
+module Song where
 
 import Euterpea
 import System.Random
@@ -6,8 +7,8 @@ import System.Random
 keycmaj = [0,2,4,5,7,9,11] 
 cmaj = map (\n -> (n::AbsPitch)) (filter (\n -> (n `mod` 12) `elem` keycmaj) [0..127])
 
-main :: IO ()
-main = do
+main2 :: IO ()
+main2 = do
     -- num :: Float
     num <- getStdRandom (randomR (1,12)) :: IO Int
     -- This "extracts" the float from IO Float and binds it to the name num
