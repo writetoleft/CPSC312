@@ -23,9 +23,7 @@ Cabal users can typically get this done problem-free by entering the following i
 Some good synthesizers and troubleshooting info are available at http://euterpea.com/
 
 
-Once Euterpea is playing music properly:
-
--- To run our project, try:
+Once Euterpea is able to play MIDI correctly, try:
 
 -- ghci
 
